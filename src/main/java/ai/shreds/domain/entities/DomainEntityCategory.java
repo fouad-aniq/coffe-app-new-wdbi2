@@ -1,4 +1,4 @@
-package com.wordpressclone.domain.entities;
+package ai.shreds.domain.entities;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,7 +9,7 @@ import lombok.ToString;
 import java.util.UUID;
 import java.util.List;
 import java.util.Map;
-import java.sql.Timestamp; // Updated import from java.time.Instant to java.sql.Timestamp
+import java.sql.Timestamp;
 
 @Data
 @NoArgsConstructor
@@ -23,7 +23,7 @@ public class DomainEntityCategory {
     private DomainEntityCategory parentCategory;
     private List<String> tags;
     private Map<String, Object> metadata;
-    private Timestamp createdAt; // Changed from Instant to Timestamp to match UML
-    private Timestamp updatedAt; // Changed from Instant to Timestamp to match UML
+    private Timestamp createdAt;
+    private Timestamp updatedAt;
     private List<DomainEntityCategory> subcategories;
 }

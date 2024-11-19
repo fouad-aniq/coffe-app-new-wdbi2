@@ -27,12 +27,12 @@ public class SharedCreateCategoryRequest {
 
     private String description;
 
-    @ValidCategoryParent
-    private UUID parentCategoryId;
-
     @UniqueElements(message = "Tags must be unique within the category")
     private List<@NotEmpty(message = "Tag cannot be empty") String> tags;
 
     @ValidMetadata
     private Map<String, Object> metadata;
+
+    @ValidCategoryParent
+    private UUID parentCategoryId;
 }

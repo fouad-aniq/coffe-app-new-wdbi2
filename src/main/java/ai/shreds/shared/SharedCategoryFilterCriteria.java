@@ -1,4 +1,4 @@
-package shared;
+package ai.shreds.shared;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -9,7 +9,6 @@ import javax.validation.constraints.NotBlank;
 import org.hibernate.validator.constraints.UniqueElements;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Request object for updating a Category.
@@ -29,11 +28,6 @@ public class SharedUpdateCategoryRequest {
      * The description of the category.
      */
     private String description;
-
-    /**
-     * The ID of the parent category.
-     */
-    private UUID parentCategoryId;
 
     /**
      * A list of tags associated with the category.

@@ -3,6 +3,7 @@ package ai.shreds.application.services;
 import ai.shreds.application.ports.ApplicationCategoryEventOutputPort;
 import ai.shreds.shared.SharedCategoryDTO;
 import ai.shreds.shared.SharedCategoryEvent;
+import ai.shreds.shared.EventType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -32,7 +33,7 @@ public class ApplicationCategoryEventPublisher implements ApplicationCategoryEve
     @Override
     @Transactional
     public void publishCategoryCreatedEvent(SharedCategoryEvent event) {
-        event.setEventType("category_created");
+        event.setEventType(EventType.CATEGORY_CREATED);
         event.setTimestamp(Timestamp.from(Instant.now()));
         sendMessage(event);
     }
@@ -40,7 +41,7 @@ public class ApplicationCategoryEventPublisher implements ApplicationCategoryEve
     @Override
     @Transactional
     public void publishCategoryUpdatedEvent(SharedCategoryEvent event) {
-        event.setEventType("category_updated");
+        event.setEventType(EventType.CATEGORY_UPDATED);
         event.setTimestamp(Timestamp.from(Instant.now()));
         sendMessage(event);
     }
@@ -52,7 +53,7 @@ public class ApplicationCategoryEventPublisher implements ApplicationCategoryEve
         categoryDTO.setId(categoryId);
 
         SharedCategoryEvent event = new SharedCategoryEvent();
-        event.setEventType("category_deleted");
+        event.setEventType(EventType.CATEGORY_DELETED);
         event.setTimestamp(Timestamp.from(Instant.now()));
         event.setCategory(categoryDTO);
 

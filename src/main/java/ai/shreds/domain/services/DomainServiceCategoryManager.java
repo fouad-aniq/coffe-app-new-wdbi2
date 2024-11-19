@@ -8,6 +8,7 @@ import ai.shreds.shared.SharedCategoryFilterCriteria;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
 
@@ -52,8 +53,8 @@ public class DomainServiceCategoryManager {
         }
 
         Instant currentTime = Instant.now();
-        category.setCreatedAt(currentTime);
-        category.setUpdatedAt(currentTime);
+        category.setCreatedAt(Timestamp.from(currentTime));
+        category.setUpdatedAt(Timestamp.from(currentTime));
 
         DomainEntityCategory savedCategory = categoryRepository.save(category);
 
@@ -96,7 +97,7 @@ public class DomainServiceCategoryManager {
             throw new DomainExceptionCategory("Category hierarchy depth exceeds the limit", "HIERARCHY_DEPTH_EXCEEDED");
         }
 
-        existingCategory.setUpdatedAt(Instant.now());
+        existingCategory.setUpdatedAt(Timestamp.from(Instant.now()));
 
         DomainEntityCategory updatedCategory = categoryRepository.save(existingCategory);
 
