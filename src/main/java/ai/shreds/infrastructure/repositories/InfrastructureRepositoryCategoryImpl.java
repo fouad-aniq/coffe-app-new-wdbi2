@@ -6,7 +6,8 @@ import ai.shreds.infrastructure.entities.InfrastructureCategoryEntity;
 import ai.shreds.infrastructure.exceptions.InfrastructureExceptionCategory;
 import ai.shreds.infrastructure.utils.InfrastructureCategoryEntityMapper;
 import ai.shreds.shared.SharedCategoryFilterCriteria;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
@@ -15,27 +16,19 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Repository
+@RequiredArgsConstructor
 public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryRepository {
 
     private final CategoryJpaRepository categoryJpaRepository;
     private final InfrastructureCategoryEntityMapper categoryEntityMapper;
-
-    @Autowired
-    public InfrastructureRepositoryCategoryImpl(CategoryJpaRepository categoryJpaRepository,
-                                                InfrastructureCategoryEntityMapper categoryEntityMapper) {
-        this.categoryJpaRepository = categoryJpaRepository;
-        this.categoryEntityMapper = categoryEntityMapper;
-    }
 
     @Override
     @Transactional
@@ -45,10 +38,13 @@ public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryR
             InfrastructureCategoryEntity savedEntity = categoryJpaRepository.save(entity);
             return categoryEntityMapper.toDomain(savedEntity);
         } catch (OptimisticLockingFailureException e) {
+            log.error("Failed to save category due to concurrent update", e);
             throw new InfrastructureExceptionCategory("Failed to save category due to concurrent update", e);
         } catch (DataIntegrityViolationException e) {
+            log.error("Data integrity violation while saving category", e);
             throw new InfrastructureExceptionCategory("Data integrity violation while saving category", e);
         } catch (Exception e) {
+            log.error("An error occurred while saving the category", e);
             throw new InfrastructureExceptionCategory("An error occurred while saving the category", e);
         }
     }
@@ -62,14 +58,15 @@ public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryR
     @Override
     public List<DomainEntityCategory> findAll(SharedCategoryFilterCriteria filter) {
         Specification<InfrastructureCategoryEntity> spec = buildSpecification(filter);
-        Pageable pageable = PageRequest.of(filter.getPage(), filter.getSize());
+        int page = (filter.getPage() != null) ? filter.getPage() : 0;
+        int size = (filter.getSize() != null) ? filter.getSize() : 10;
+        Pageable pageable = PageRequest.of(page, size);
         List<InfrastructureCategoryEntity> entities = categoryJpaRepository.findAll(spec, pageable).getContent();
         return categoryEntityMapper.toDomainList(entities);
     }
 
     @Override
     public List<DomainEntityCategory> findByParentCategoryId(UUID parentCategoryId) {
-        // Uses optimized query to retrieve subcategories efficiently.
         List<InfrastructureCategoryEntity> entities = categoryJpaRepository.findByParentCategoryId(parentCategoryId);
         return categoryEntityMapper.toDomainList(entities);
     }
@@ -86,8 +83,10 @@ public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryR
         try {
             categoryJpaRepository.deleteById(categoryId);
         } catch (DataIntegrityViolationException e) {
+            log.error("Data integrity violation while deleting category by ID", e);
             throw new InfrastructureExceptionCategory("Data integrity violation while deleting category by ID", e);
         } catch (Exception e) {
+            log.error("An error occurred while deleting the category", e);
             throw new InfrastructureExceptionCategory("An error occurred while deleting the category", e);
         }
     }
@@ -99,8 +98,10 @@ public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryR
             InfrastructureCategoryEntity entity = categoryEntityMapper.toInfrastructure(category);
             categoryJpaRepository.delete(entity);
         } catch (DataIntegrityViolationException e) {
+            log.error("Data integrity violation while deleting category", e);
             throw new InfrastructureExceptionCategory("Data integrity violation while deleting category", e);
         } catch (Exception e) {
+            log.error("An error occurred while deleting the category", e);
             throw new InfrastructureExceptionCategory("An error occurred while deleting the category", e);
         }
     }
@@ -111,10 +112,9 @@ public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryR
     }
 
     private Specification<InfrastructureCategoryEntity> buildSpecification(SharedCategoryFilterCriteria filter) {
-        return (Root<InfrastructureCategoryEntity> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
+        return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (filter.getParentId() != null) {
-                // Leveraging PostgreSQL Common Table Expressions (CTEs) if necessary for recursive queries.
                 predicates.add(cb.equal(root.get("parentCategory").get("id"), filter.getParentId()));
             }
             if (filter.getTags() != null && !filter.getTags().isEmpty()) {

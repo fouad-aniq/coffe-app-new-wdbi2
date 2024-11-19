@@ -1,15 +1,24 @@
 package ai.shreds.shared;
 
-import lombok.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Singular;
+
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Size;
+
 import org.hibernate.validator.constraints.UniqueElements;
-import java.util.*;
-import java.sql.Timestamp;
+
 import java.io.Serializable;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import javax.validation.Valid;
+
 import ai.shreds.shared.validation.ValidCategoryParent;
 import ai.shreds.shared.validation.ValidMetadata;
 
@@ -32,6 +41,7 @@ public class SharedCategoryDTO implements Serializable {
     private UUID parentCategoryId;
 
     @Singular
+    @Valid
     @Size(max = 100, message = "Tags list can have at most 100 items.")
     @UniqueElements(message = "Tags must be unique within the category.")
     private List<@NotEmpty(message = "Tags must be non-empty strings.") String> tags;

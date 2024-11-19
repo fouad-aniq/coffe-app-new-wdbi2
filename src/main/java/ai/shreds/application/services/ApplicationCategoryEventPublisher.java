@@ -1,30 +1,33 @@
 package ai.shreds.application.services;
 
 import ai.shreds.application.ports.ApplicationCategoryEventOutputPort;
-import ai.shreds.shared.SharedCategoryEvent;
 import ai.shreds.shared.SharedCategoryDTO;
+import ai.shreds.shared.SharedCategoryEvent;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.retry.annotation.Retryable;
-import org.springframework.retry.annotation.Backoff;
 
-import java.util.UUID;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.UUID;
 
+/**
+ * Service responsible for publishing category events to Kafka.
+ */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class ApplicationCategoryEventPublisher implements ApplicationCategoryEventOutputPort {
 
     private static final String TOPIC = "category_events";
     private final KafkaTemplate<String, SharedCategoryEvent> kafkaTemplate;
-
-    public ApplicationCategoryEventPublisher(KafkaTemplate<String, SharedCategoryEvent> kafkaTemplate) {
-        this.kafkaTemplate = kafkaTemplate;
-    }
 
     @Override
     @Transactional
@@ -67,18 +70,16 @@ public class ApplicationCategoryEventPublisher implements ApplicationCategoryEve
             future.addCallback(new ListenableFutureCallback<SendResult<String, SharedCategoryEvent>>() {
                 @Override
                 public void onSuccess(SendResult<String, SharedCategoryEvent> result) {
-                    // Log success
-                    System.out.println("Sent message=[" + event + "] with offset=[" + result.getRecordMetadata().offset() + "]");
+                    log.info("Sent message=[{}] with offset=[{}]", event, result.getRecordMetadata().offset());
                 }
 
                 @Override
                 public void onFailure(Throwable ex) {
-                    System.err.println("Unable to send message=[" + event + "] due to : " + ex.getMessage());
-                    // Throw exception to trigger retry
+                    log.error("Unable to send message=[{}] due to : {}", event, ex.getMessage());
                     throw new RuntimeException("Failed to send message to Kafka", ex);
                 }
             });
-            return true;
+            return null;
         });
     }
 }

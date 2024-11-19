@@ -1,6 +1,7 @@
 package ai.shreds.infrastructure.entities;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
@@ -8,15 +9,15 @@ import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
  * Represents a category that can be hierarchically structured and associated with multiple tags for flexible classification.
  */
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -25,7 +26,6 @@ public class InfrastructureCategoryEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @NotNull
     @Column(nullable = false)
     private UUID id;
 
@@ -61,69 +61,19 @@ public class InfrastructureCategoryEntity {
     private Set<String> tags = new HashSet<>();
 
     /**
-     * Metadata in JSON format, validated to ensure it conforms to expected structure.
+     * Metadata in JSON format.
      */
-    @Column(columnDefinition = "jsonb")
     @Type(type = "jsonb")
-    private Map<String, Object> metadata;
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> metadata = new HashMap<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private Timestamp createdAt;
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
-    private Timestamp updatedAt;
+    private LocalDateTime updatedAt;
 
-    @PrePersist
-    @PreUpdate
-    private void validate() {
-        // Prevent cyclical hierarchies
-        if (isCyclic(this, new HashSet<>())) {
-            throw new IllegalStateException("A category cannot be its own parent or create a cycle in the hierarchy.");
-        }
-
-        // Validate hierarchy depth
-        if (getHierarchyDepth() > 10) {
-            throw new IllegalStateException("The depth of the category hierarchy cannot exceed 10.");
-        }
-
-        // Validate metadata
-        validateMetadata(metadata);
-    }
-
-    private boolean isCyclic(InfrastructureCategoryEntity category, Set<UUID> visited) {
-        if (category.parentCategory != null) {
-            if (visited.contains(category.parentCategory.getId())) {
-                return true;
-            } else {
-                visited.add(category.parentCategory.getId());
-                return isCyclic(category.parentCategory, visited);
-            }
-        }
-        return false;
-    }
-
-    private int getHierarchyDepth() {
-        int depth = 1;
-        InfrastructureCategoryEntity current = this.parentCategory;
-        while (current != null) {
-            depth++;
-            current = current.parentCategory;
-        }
-        return depth;
-    }
-
-    private void validateMetadata(Map<String, Object> metadata) {
-        // Implement specific validation rules for metadata
-        if (metadata != null) {
-            // Example validation: disallow certain keys
-            Set<String> disallowedKeys = new HashSet<>(Arrays.asList("forbiddenKey1", "forbiddenKey2"));
-            for (String key : metadata.keySet()) {
-                if (disallowedKeys.contains(key)) {
-                    throw new IllegalStateException("Metadata contains disallowed key: " + key);
-                }
-            }
-        }
-    }
+    // Validation logic has been moved to appropriate service or validator classes to maintain separation of concerns.
 }

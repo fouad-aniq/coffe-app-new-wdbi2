@@ -17,9 +17,8 @@ public interface DomainPortCategoryEvent {
      * Handles failures in publishing events to Kafka by implementing retry mechanisms and error handling.
      *
      * @param category the domain entity representing the newly created category
-     * @throws EventPublishingException if the event could not be published
      */
-    void publishCategoryCreatedEvent(DomainEntityCategory category) throws EventPublishingException;
+    void publishCategoryCreatedEvent(DomainEntityCategory category);
 
     /**
      * Publishes an event indicating that a category has been updated.
@@ -27,9 +26,8 @@ public interface DomainPortCategoryEvent {
      * Handles failures in publishing events to Kafka by implementing retry mechanisms and error handling.
      *
      * @param category the domain entity representing the updated category
-     * @throws EventPublishingException if the event could not be published
      */
-    void publishCategoryUpdatedEvent(DomainEntityCategory category) throws EventPublishingException;
+    void publishCategoryUpdatedEvent(DomainEntityCategory category);
 
     /**
      * Publishes an event indicating that a category has been deleted.
@@ -37,7 +35,6 @@ public interface DomainPortCategoryEvent {
      * Handles failures in publishing events to Kafka by implementing retry mechanisms and error handling.
      *
      * @param categoryId the UUID of the category that was deleted
-     * @throws EventPublishingException if the event could not be published
      */
-    void publishCategoryDeletedEvent(UUID categoryId) throws EventPublishingException;
+    void publishCategoryDeletedEvent(UUID categoryId);
 }

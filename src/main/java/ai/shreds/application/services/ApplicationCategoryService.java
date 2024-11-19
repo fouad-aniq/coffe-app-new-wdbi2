@@ -10,6 +10,7 @@ import ai.shreds.shared.SharedCategoryFilterCriteria;
 import ai.shreds.shared.SharedCategoryResponse;
 import ai.shreds.shared.SharedCreateCategoryRequest;
 import ai.shreds.shared.SharedUpdateCategoryRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -19,11 +20,13 @@ import javax.validation.Valid;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ApplicationCategoryService implements ApplicationCategoryInputPort {
 
     private static final int MAX_HIERARCHY_DEPTH = 10;
@@ -32,23 +35,9 @@ public class ApplicationCategoryService implements ApplicationCategoryInputPort 
     private final DomainPortCategoryRepository categoryRepository;
     private final DomainPortCategoryEvent categoryEventPublisher;
 
-    public ApplicationCategoryService(ApplicationCategoryMapper categoryMapper,
-                                      DomainPortCategoryRepository categoryRepository,
-                                      DomainPortCategoryEvent categoryEventPublisher) {
-        this.categoryMapper = categoryMapper;
-        this.categoryRepository = categoryRepository;
-        this.categoryEventPublisher = categoryEventPublisher;
-    }
-
     @Override
     public SharedCategoryResponse createCategory(@Valid SharedCreateCategoryRequest request) {
         // Validate input data using Hibernate Validator annotations
-        // (Assuming validations are handled by annotations on request DTOs)
-
-        // Validate uniqueness of category name under the same parent
-        if (categoryRepository.existsByNameAndParentId(request.getName(), request.getParentCategoryId())) {
-            throw new ApplicationExceptionCategory("Category name must be unique under the same parent.", HttpStatus.CONFLICT);
-        }
 
         // Ensure tags are unique within the category
         if (request.getTags() != null && !areTagsUnique(request.getTags())) {
@@ -63,10 +52,6 @@ public class ApplicationCategoryService implements ApplicationCategoryInputPort 
         if (request.getParentCategoryId() != null) {
             parentCategory = categoryRepository.findById(request.getParentCategoryId())
                     .orElseThrow(() -> new ApplicationExceptionCategory("Parent category not found.", HttpStatus.NOT_FOUND));
-            // Check for cyclical relationships
-            if (isDescendant(parentCategory, request.getParentCategoryId())) {
-                throw new ApplicationExceptionCategory("Cyclical category relationship detected.", HttpStatus.BAD_REQUEST);
-            }
             // Check hierarchy depth
             int depth = getHierarchyDepth(parentCategory);
             if (depth >= MAX_HIERARCHY_DEPTH) {
@@ -121,21 +106,13 @@ public class ApplicationCategoryService implements ApplicationCategoryInputPort 
         DomainEntityCategory existingCategory = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ApplicationExceptionCategory("Category not found.", HttpStatus.NOT_FOUND));
 
-        // Check for unique name under the same parent if name is changed
-        if (request.getName() != null && !existingCategory.getName().equals(request.getName()) &&
-                categoryRepository.existsByNameAndParentId(request.getName(), request.getParentCategoryId())) {
-            throw new ApplicationExceptionCategory("Category name must be unique under the same parent.", HttpStatus.CONFLICT);
-        }
-
         // Ensure tags are unique within the category
         if (request.getTags() != null && !areTagsUnique(request.getTags())) {
             throw new ApplicationExceptionCategory("Tags must be unique within the category.", HttpStatus.BAD_REQUEST);
         }
 
         // Validate metadata
-        if (request.getMetadata() != null) {
-            validateMetadata(request.getMetadata());
-        }
+        validateMetadata(request.getMetadata());
 
         // Validate and set new parent category
         if (request.getParentCategoryId() != null) {
@@ -185,7 +162,7 @@ public class ApplicationCategoryService implements ApplicationCategoryInputPort 
             deleteSubcategories(category);
         } else {
             // Check if category has subcategories
-            if (!category.getSubcategories().isEmpty()) {
+            if (category.getSubcategories() != null && !category.getSubcategories().isEmpty()) {
                 throw new ApplicationExceptionCategory("Cannot delete category with subcategories unless cascade is true.", HttpStatus.BAD_REQUEST);
             }
         }
@@ -202,9 +179,11 @@ public class ApplicationCategoryService implements ApplicationCategoryInputPort 
     }
 
     private void deleteSubcategories(DomainEntityCategory category) {
-        for (DomainEntityCategory subcategory : category.getSubcategories()) {
-            deleteSubcategories(subcategory);
-            categoryRepository.delete(subcategory);
+        if (category.getSubcategories() != null) {
+            for (DomainEntityCategory subcategory : category.getSubcategories()) {
+                deleteSubcategories(subcategory);
+                categoryRepository.delete(subcategory);
+            }
         }
     }
 
@@ -241,21 +220,22 @@ public class ApplicationCategoryService implements ApplicationCategoryInputPort 
     }
 
     private void validateMetadata(Map<String, Object> metadata) {
+        if (metadata == null) {
+            return; // No metadata to validate
+        }
         // Implement validation logic for metadata structure and disallowed keys or values
-        // For example, check for null keys, unsupported data types, or prohibited entries
         if (metadata.containsKey("disallowedKey")) {
             throw new ApplicationExceptionCategory("Metadata contains disallowed keys.", HttpStatus.BAD_REQUEST);
         }
-        // Additional validation as per business rules
     }
 
     private void buildHierarchy(DomainEntityCategory category) {
-        // Implement logic to build hierarchical structure if necessary
-        // For example, load subcategories recursively
         List<DomainEntityCategory> subcategories = categoryRepository.findByParentCategoryId(category.getId());
         category.setSubcategories(subcategories);
-        for (DomainEntityCategory subcategory : subcategories) {
-            buildHierarchy(subcategory);
+        if (subcategories != null) {
+            for (DomainEntityCategory subcategory : subcategories) {
+                buildHierarchy(subcategory);
+            }
         }
     }
 }

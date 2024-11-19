@@ -5,13 +5,11 @@ import ai.shreds.domain.exceptions.DomainExceptionCategory;
 import ai.shreds.domain.ports.DomainPortCategoryEvent;
 import ai.shreds.domain.ports.DomainPortCategoryRepository;
 import ai.shreds.shared.SharedCategoryFilterCriteria;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.*;
-import java.util.regex.Pattern;
 
 @Service
 public class DomainServiceCategoryManager {
@@ -20,7 +18,6 @@ public class DomainServiceCategoryManager {
     private final DomainPortCategoryRepository categoryRepository;
     private final DomainPortCategoryEvent categoryEventPublisher;
 
-    @Autowired
     public DomainServiceCategoryManager(DomainPortCategoryRepository categoryRepository,
                                         DomainPortCategoryEvent categoryEventPublisher) {
         this.categoryRepository = categoryRepository;
@@ -28,77 +25,58 @@ public class DomainServiceCategoryManager {
     }
 
     @Transactional
-    public DomainEntityCategory createCategory(DomainEntityCategory category) throws DomainExceptionCategory {
-        // Validate mandatory fields
+    public DomainEntityCategory createCategory(DomainEntityCategory category) {
         validateMandatoryFields(category);
-
-        // Validate tags are unique within the category
         validateUniqueTags(category.getTags());
-
-        // Validate metadata
         validateMetadata(category.getMetadata());
 
-        // Check parent category
         DomainEntityCategory parentCategory = null;
         if (category.getParentCategory() != null) {
             UUID parentId = category.getParentCategory().getId();
             parentCategory = categoryRepository.findById(parentId)
                     .orElseThrow(() -> new DomainExceptionCategory("Parent category not found", "PARENT_CATEGORY_NOT_FOUND"));
-            // Prevent cyclical relationships
             if (parentId.equals(category.getId())) {
                 throw new DomainExceptionCategory("Category cannot be its own parent", "CYCLICAL_RELATIONSHIP");
             }
-            if (isDescendant(category.getId(), parentId)) {
+            if (isDescendant(parentId, category.getId())) {
                 throw new DomainExceptionCategory("Cyclical hierarchy detected", "CYCLICAL_RELATIONSHIP");
             }
             category.setParentCategory(parentCategory);
         }
 
-        // Ensure unique name under same parent
         ensureUniqueNameUnderParent(category, parentCategory);
 
-        // Limit category hierarchy depth
         int depth = getCategoryDepth(category);
         if (depth > MAX_HIERARCHY_DEPTH) {
             throw new DomainExceptionCategory("Category hierarchy depth exceeds the limit", "HIERARCHY_DEPTH_EXCEEDED");
         }
 
-        // Set timestamps
-        Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+        Instant currentTime = Instant.now();
         category.setCreatedAt(currentTime);
         category.setUpdatedAt(currentTime);
 
-        // Save category
         DomainEntityCategory savedCategory = categoryRepository.save(category);
 
-        // Publish event
         categoryEventPublisher.publishCategoryCreatedEvent(savedCategory);
 
         return savedCategory;
     }
 
     @Transactional
-    public DomainEntityCategory updateCategory(UUID categoryId, DomainEntityCategory updatedData) throws DomainExceptionCategory {
-        // Retrieve existing category
+    public DomainEntityCategory updateCategory(UUID categoryId, DomainEntityCategory updatedData) {
         DomainEntityCategory existingCategory = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new DomainExceptionCategory("Category not found", "CATEGORY_NOT_FOUND"));
 
-        // Validate mandatory fields
         validateMandatoryFields(updatedData);
-
-        // Validate tags are unique within the category
         validateUniqueTags(updatedData.getTags());
-
-        // Validate metadata
         validateMetadata(updatedData.getMetadata());
 
-        // Handle parent category change
         if (updatedData.getParentCategory() != null) {
             UUID newParentId = updatedData.getParentCategory().getId();
             if (newParentId.equals(categoryId)) {
                 throw new DomainExceptionCategory("Category cannot be its own parent", "CYCLICAL_RELATIONSHIP");
             }
-            if (isDescendant(categoryId, newParentId)) {
+            if (isDescendant(newParentId, categoryId)) {
                 throw new DomainExceptionCategory("Cyclical hierarchy detected", "CYCLICAL_RELATIONSHIP");
             }
             DomainEntityCategory newParentCategory = categoryRepository.findById(newParentId)
@@ -106,36 +84,29 @@ public class DomainServiceCategoryManager {
             existingCategory.setParentCategory(newParentCategory);
         }
 
-        // Update fields
         existingCategory.setName(updatedData.getName());
         existingCategory.setDescription(updatedData.getDescription());
         existingCategory.setMetadata(updatedData.getMetadata());
         existingCategory.setTags(updatedData.getTags());
 
-        // Ensure unique name under same parent
         ensureUniqueNameUnderParent(existingCategory, existingCategory.getParentCategory());
 
-        // Limit category hierarchy depth
         int depth = getCategoryDepth(existingCategory);
         if (depth > MAX_HIERARCHY_DEPTH) {
             throw new DomainExceptionCategory("Category hierarchy depth exceeds the limit", "HIERARCHY_DEPTH_EXCEEDED");
         }
 
-        // Update timestamp
-        existingCategory.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
+        existingCategory.setUpdatedAt(Instant.now());
 
-        // Save the updated category
         DomainEntityCategory updatedCategory = categoryRepository.save(existingCategory);
 
-        // Publish event
         categoryEventPublisher.publishCategoryUpdatedEvent(updatedCategory);
 
         return updatedCategory;
     }
 
     @Transactional
-    public void deleteCategory(UUID categoryId, boolean cascade) throws DomainExceptionCategory {
-        // Retrieve category
+    public void deleteCategory(UUID categoryId, boolean cascade) {
         DomainEntityCategory category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new DomainExceptionCategory("Category not found", "CATEGORY_NOT_FOUND"));
 
@@ -148,27 +119,22 @@ public class DomainServiceCategoryManager {
             }
             categoryRepository.delete(category);
 
-            // Publish event
             categoryEventPublisher.publishCategoryDeletedEvent(categoryId);
         }
     }
 
-    public DomainEntityCategory getCategoryById(UUID categoryId) throws DomainExceptionCategory {
-        // Retrieve category
+    public DomainEntityCategory getCategoryById(UUID categoryId) {
         DomainEntityCategory category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new DomainExceptionCategory("Category not found", "CATEGORY_NOT_FOUND"));
 
-        // Assemble hierarchical structure
         category.setSubcategories(getSubcategoriesRecursively(category));
 
         return category;
     }
 
     public List<DomainEntityCategory> getAllCategories(SharedCategoryFilterCriteria filter) {
-        // Retrieve categories based on filter criteria
         List<DomainEntityCategory> categories = categoryRepository.findAll(filter);
 
-        // Assemble hierarchical structures
         for (DomainEntityCategory category : categories) {
             category.setSubcategories(getSubcategoriesRecursively(category));
         }
@@ -176,13 +142,13 @@ public class DomainServiceCategoryManager {
         return categories;
     }
 
-    private boolean isDescendant(UUID categoryId, UUID potentialAncestorId) {
-        if (categoryId.equals(potentialAncestorId)) {
+    private boolean isDescendant(UUID ancestorId, UUID descendantId) {
+        if (ancestorId.equals(descendantId)) {
             return true;
         }
-        List<DomainEntityCategory> subcategories = categoryRepository.findByParentCategoryId(potentialAncestorId);
+        List<DomainEntityCategory> subcategories = categoryRepository.findByParentCategoryId(ancestorId);
         for (DomainEntityCategory subcategory : subcategories) {
-            if (isDescendant(categoryId, subcategory.getId())) {
+            if (isDescendant(subcategory.getId(), descendantId)) {
                 return true;
             }
         }
@@ -209,7 +175,6 @@ public class DomainServiceCategoryManager {
         }
         categoryRepository.delete(category);
 
-        // Publish deletion event
         categoryEventPublisher.publishCategoryDeletedEvent(category.getId());
     }
 
@@ -221,15 +186,13 @@ public class DomainServiceCategoryManager {
         return subcategories;
     }
 
-    // Validate mandatory fields
-    private void validateMandatoryFields(DomainEntityCategory category) throws DomainExceptionCategory {
+    private void validateMandatoryFields(DomainEntityCategory category) {
         if (category.getName() == null || category.getName().trim().isEmpty()) {
             throw new DomainExceptionCategory("Category name is mandatory", "CATEGORY_NAME_MANDATORY");
         }
     }
 
-    // Validate that tags are unique within the category
-    private void validateUniqueTags(List<String> tags) throws DomainExceptionCategory {
+    private void validateUniqueTags(List<String> tags) {
         if (tags != null) {
             Set<String> tagSet = new HashSet<>(tags);
             if (tagSet.size() != tags.size()) {
@@ -238,12 +201,9 @@ public class DomainServiceCategoryManager {
         }
     }
 
-    // Validate metadata to ensure it conforms to expected JSON structure
-    private void validateMetadata(Map<String, Object> metadata) throws DomainExceptionCategory {
+    private void validateMetadata(Map<String, Object> metadata) {
         if (metadata != null) {
-            // Implement metadata validation logic here
-            // For example, check for disallowed keys or values
-            Set<String> allowedKeys = Set.of("allowedKey1", "allowedKey2");
+            Set<String> allowedKeys = new HashSet<>(Arrays.asList("allowedKey1", "allowedKey2"));
             for (String key : metadata.keySet()) {
                 if (!allowedKeys.contains(key)) {
                     throw new DomainExceptionCategory("Metadata contains disallowed key: " + key, "INVALID_METADATA_KEY");
@@ -252,9 +212,8 @@ public class DomainServiceCategoryManager {
         }
     }
 
-    // Ensure unique name under the same parent
-    private void ensureUniqueNameUnderParent(DomainEntityCategory category, DomainEntityCategory parentCategory) throws DomainExceptionCategory {
-        UUID parentIdValue = parentCategory != null ? parentCategory.getId() : null;
+    private void ensureUniqueNameUnderParent(DomainEntityCategory category, DomainEntityCategory parentCategory) {
+        UUID parentIdValue = (parentCategory != null) ? parentCategory.getId() : null;
         List<DomainEntityCategory> siblingCategories = categoryRepository.findByParentCategoryId(parentIdValue);
         for (DomainEntityCategory sibling : siblingCategories) {
             if (!sibling.getId().equals(category.getId()) && sibling.getName().equals(category.getName())) {

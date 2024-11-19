@@ -4,7 +4,6 @@ import ai.shreds.shared.SharedCategoryResponse;
 import ai.shreds.shared.SharedCreateCategoryRequest;
 import ai.shreds.shared.SharedUpdateCategoryRequest;
 import ai.shreds.shared.SharedCategoryFilterCriteria;
-
 import java.util.List;
 import java.util.UUID;
 

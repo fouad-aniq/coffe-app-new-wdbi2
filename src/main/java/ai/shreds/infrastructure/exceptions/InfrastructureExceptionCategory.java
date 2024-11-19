@@ -1,14 +1,11 @@
 package ai.shreds.infrastructure.exceptions;
 
-import lombok.Getter;
-
 /**
  * Custom exception class for category-related exceptions in the infrastructure layer.
  */
-@Getter
 public class InfrastructureExceptionCategory extends RuntimeException {
 
-    private final String message;
+    private static final long serialVersionUID = 1L;
 
     /**
      * Constructs a new InfrastructureExceptionCategory with the specified detail message.
@@ -17,7 +14,6 @@ public class InfrastructureExceptionCategory extends RuntimeException {
      */
     public InfrastructureExceptionCategory(String message) {
         super(message);
-        this.message = message;
     }
 
     /**
@@ -28,6 +24,5 @@ public class InfrastructureExceptionCategory extends RuntimeException {
      */
     public InfrastructureExceptionCategory(String message, Throwable cause) {
         super(message, cause);
-        this.message = message;
     }
 }

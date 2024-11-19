@@ -2,22 +2,24 @@ package ai.shreds.infrastructure.external_services;
 
 import ai.shreds.domain.entities.DomainEntityCategory;
 import ai.shreds.domain.ports.DomainPortCategoryEvent;
+import ai.shreds.infrastructure.exceptions.InfrastructureExceptionCategory;
 import ai.shreds.shared.SharedCategoryDTO;
 import ai.shreds.shared.SharedCategoryEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.errors.RetriableException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
-import java.time.Instant;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.UUID;
 
+@Slf4j
 @Service
 public class InfrastructureCategoryEventPublisher implements DomainPortCategoryEvent {
 
@@ -27,25 +29,22 @@ public class InfrastructureCategoryEventPublisher implements DomainPortCategoryE
     @Value("${kafka.topic.category_events}")
     private String categoryEventsTopic;
 
-    public InfrastructureCategoryEventPublisher(KafkaTemplate<String, String> kafkaTemplate) {
+    public InfrastructureCategoryEventPublisher(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
     }
 
     @Override
-    @Transactional
     public void publishCategoryCreatedEvent(DomainEntityCategory category) {
         publishEvent(category, "category_created");
     }
 
     @Override
-    @Transactional
     public void publishCategoryUpdatedEvent(DomainEntityCategory category) {
         publishEvent(category, "category_updated");
     }
 
     @Override
-    @Transactional
     public void publishCategoryDeletedEvent(UUID categoryId) {
         SharedCategoryEvent event = new SharedCategoryEvent();
         event.setEventType("category_deleted");
@@ -71,7 +70,7 @@ public class InfrastructureCategoryEventPublisher implements DomainPortCategoryE
         dto.setName(category.getName());
         dto.setDescription(category.getDescription());
         dto.setParentCategoryId(
-            category.getParentCategory() != null ? category.getParentCategory().getId() : null
+                category.getParentCategory() != null ? category.getParentCategory().getId() : null
         );
         dto.setTags(category.getTags());
         dto.setMetadata(category.getMetadata());
@@ -87,23 +86,25 @@ public class InfrastructureCategoryEventPublisher implements DomainPortCategoryE
                 operations.send(categoryEventsTopic, key, message).addCallback(new ListenableFutureCallback<SendResult<String, String>>() {
                     @Override
                     public void onSuccess(SendResult<String, String> result) {
-                        // Handle success if necessary
+                        log.info("Successfully sent message with key {} to topic {}", key, categoryEventsTopic);
                     }
 
                     @Override
                     public void onFailure(Throwable ex) {
                         if (ex instanceof RetriableException) {
+                            log.warn("Retriable exception occurred while sending message with key {}: {}", key, ex.getMessage());
                             // Implement retry logic or handle retriable exceptions
                         } else {
-                            // Non-retriable exception, handle accordingly
-                            throw new RuntimeException("Failed to send message to Kafka", ex);
+                            log.error("Failed to send message with key {}: {}", key, ex.getMessage());
+                            throw new InfrastructureExceptionCategory("Failed to send message to Kafka", ex);
                         }
                     }
                 });
                 return null;
             });
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize event message", e);
+            log.error("Failed to serialize event message: {}", e.getMessage());
+            throw new InfrastructureExceptionCategory("Failed to serialize event message", e);
         }
     }
 }

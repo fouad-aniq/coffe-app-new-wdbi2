@@ -12,6 +12,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.sql.Timestamp;
 
+/**
+ * Data Transfer Object for Category Response including subcategories.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -28,5 +31,4 @@ public class SharedCategoryResponse {
     private Timestamp createdAt;
     private Timestamp updatedAt;
     private List<SharedCategoryResponse> subcategories;
-
 }

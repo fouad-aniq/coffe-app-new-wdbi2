@@ -7,12 +7,13 @@ import lombok.AllArgsConstructor;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.AssertTrue;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import org.hibernate.validator.constraints.UniqueElements;
+import ai.shreds.shared.validation.ValidCategoryParent;
+import ai.shreds.shared.validation.ValidMetadata;
 
 @Data
 @Builder
@@ -26,24 +27,12 @@ public class SharedCreateCategoryRequest {
 
     private String description;
 
+    @ValidCategoryParent
     private UUID parentCategoryId;
 
     @UniqueElements(message = "Tags must be unique within the category")
     private List<@NotEmpty(message = "Tag cannot be empty") String> tags;
 
+    @ValidMetadata
     private Map<String, Object> metadata;
-
-    @AssertTrue(message = "Category cannot be its own parent or a descendant of itself")
-    private boolean isParentCategoryValid() {
-        // Logic to prevent cyclical hierarchies
-        // Placeholder for actual implementation
-        return true;
-    }
-
-    @AssertTrue(message = "Metadata contains invalid keys or structure")
-    private boolean isMetadataValid() {
-        // Logic to validate metadata structure and disallowed keys or values
-        // Placeholder for actual implementation
-        return true;
-    }
 }
