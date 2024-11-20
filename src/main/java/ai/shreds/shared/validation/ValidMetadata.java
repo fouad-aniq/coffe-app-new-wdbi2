@@ -1,3 +1,4 @@
+// Full fixed and enhanced code for the main class 'ValidMetadata'
 package ai.shreds.shared;
 
 import java.util.Map;
@@ -6,6 +7,10 @@ import java.util.HashSet;
 import java.util.regex.Pattern;
 
 public class ValidMetadata {
+
+    // Private constructor to prevent instantiation of utility class
+    private ValidMetadata() {
+    }
 
     private static final Set<String> DISALLOWED_KEYS = new HashSet<>();
     private static final Set<Object> DISALLOWED_VALUES = new HashSet<>();
@@ -55,12 +60,6 @@ public class ValidMetadata {
 
             // Additional value validation can be added here
             // e.g., check value types, nested structures, etc.
-        }
-    }
-
-    public static class InvalidMetadataException extends Exception {
-        public InvalidMetadataException(String message) {
-            super(message);
         }
     }
 }

@@ -2,14 +2,30 @@ package ai.shreds.shared;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Arrays;
+import java.util.Collections;
+import lombok.experimental.UtilityClass;
+import ai.shreds.shared.ValidationException;
 
+/**
+ * Utility class for validating metadata in shared category requests and DTOs.
+ */
+@UtilityClass
 public class MetadataValidator {
 
-    private static final Set<String> DISALLOWED_KEYS = new HashSet<>();
-    private static final Set<Object> DISALLOWED_VALUES = new HashSet<>();
-    private static final Set<Class<?>> ALLOWED_VALUE_TYPES = Set.of(
+    private static final Set<String> DISALLOWED_KEYS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "password",
+            "creditCardNumber"
+            // Add other disallowed keys as required
+    )));
+    private static final Set<Object> DISALLOWED_VALUES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "disallowedValue1",
+            12345
+            // Add other disallowed values as required
+    )));
+    private static final Set<Class<?>> ALLOWED_VALUE_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             String.class,
             Integer.class,
             Long.class,
@@ -18,19 +34,15 @@ public class MetadataValidator {
             Boolean.class,
             List.class,
             Map.class
-    );
+    )));
 
-    static {
-        DISALLOWED_KEYS.add("password");
-        DISALLOWED_KEYS.add("creditCardNumber");
-        // Add other disallowed keys as required
-
-        DISALLOWED_VALUES.add("disallowedValue1");
-        DISALLOWED_VALUES.add(12345);
-        // Add other disallowed values as required
-    }
-
-    public static void validateMetadata(Map<String, Object> metadata) throws ValidationException {
+    /**
+     * Validates the provided metadata map.
+     *
+     * @param metadata the metadata map to validate
+     * @throws ValidationException if validation fails
+     */
+    public void validateMetadata(Map<String, Object> metadata) throws ValidationException {
         if (metadata == null || metadata.isEmpty()) {
             return; // Nothing to validate
         }
@@ -58,12 +70,6 @@ public class MetadataValidator {
             if (!allowedType) {
                 throw new ValidationException("Metadata contains invalid value type for key: " + key);
             }
-        }
-    }
-
-    public static class ValidationException extends Exception {
-        public ValidationException(String message) {
-            super(message);
         }
     }
 }

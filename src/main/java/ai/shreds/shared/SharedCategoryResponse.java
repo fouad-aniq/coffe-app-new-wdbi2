@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
@@ -27,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SharedCategoryResponse {

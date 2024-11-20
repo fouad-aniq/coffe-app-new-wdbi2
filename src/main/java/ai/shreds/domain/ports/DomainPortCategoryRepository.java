@@ -2,9 +2,9 @@ package ai.shreds.domain.ports;
 
 import ai.shreds.domain.entities.DomainEntityCategory;
 import ai.shreds.shared.SharedCategoryFilterCriteria;
-import java.util.UUID;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Defines the data persistence operations for Category entities.

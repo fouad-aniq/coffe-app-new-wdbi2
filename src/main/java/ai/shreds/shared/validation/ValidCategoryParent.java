@@ -1,10 +1,15 @@
 package ai.shreds.shared;
 
+import lombok.experimental.UtilityClass;
+
 import java.util.UUID;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
 
+import ai.shreds.shared.SharedCategoryDTO;
+
+@UtilityClass
 public class ValidCategoryParent {
 
     /**
@@ -15,7 +20,7 @@ public class ValidCategoryParent {
      * @param categoryMap A map of category IDs to SharedCategoryDTOs.
      * @throws IllegalArgumentException if the validation fails.
      */
-    public static void validateCategoryParent(UUID categoryId, UUID parentCategoryId, Map<UUID, SharedCategoryDTO> categoryMap) {
+    public void validateCategoryParent(UUID categoryId, UUID parentCategoryId, Map<UUID, SharedCategoryDTO> categoryMap) {
         if (parentCategoryId == null) {
             return; // Valid, root category
         }

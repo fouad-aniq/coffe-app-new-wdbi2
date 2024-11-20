@@ -6,10 +6,12 @@ import ai.shreds.infrastructure.exceptions.InfrastructureExceptionCategory;
 import ai.shreds.shared.SharedCategoryDTO;
 import ai.shreds.shared.SharedCategoryEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -17,45 +19,39 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 @Service
+@RequiredArgsConstructor
 public class InfrastructureCategoryEventPublisher implements DomainPortCategoryEvent {
 
     private static final String TOPIC = "category_events";
 
+    private static final Logger logger = LoggerFactory.getLogger(InfrastructureCategoryEventPublisher.class);
+
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    public InfrastructureCategoryEventPublisher(KafkaTemplate<String, String> kafkaTemplate) {
-        this.kafkaTemplate = kafkaTemplate;
-        this.objectMapper = new ObjectMapper();
-
-        // Enable transactions on KafkaTemplate
-        this.kafkaTemplate.setTransactionIdPrefix("categoryEvents-");
-    }
-
     @Override
-    @Transactional
-    public void publishCategoryCreatedEvent(DomainEntityCategory category) throws InfrastructureExceptionCategory {
+    public void publishCategoryCreatedEvent(DomainEntityCategory category) {
         SharedCategoryEvent event = createEvent("category_created", category);
         sendEvent(event);
     }
 
     @Override
-    @Transactional
-    public void publishCategoryUpdatedEvent(DomainEntityCategory category) throws InfrastructureExceptionCategory {
+    public void publishCategoryUpdatedEvent(DomainEntityCategory category) {
         SharedCategoryEvent event = createEvent("category_updated", category);
         sendEvent(event);
     }
 
     @Override
-    @Transactional
-    public void publishCategoryDeletedEvent(UUID categoryId) throws InfrastructureExceptionCategory {
-        SharedCategoryDTO categoryDTO = new SharedCategoryDTO();
-        categoryDTO.setId(categoryId);
+    public void publishCategoryDeletedEvent(UUID categoryId) {
+        SharedCategoryDTO categoryDTO = SharedCategoryDTO.builder()
+            .id(categoryId)
+            .build();
 
-        SharedCategoryEvent event = new SharedCategoryEvent();
-        event.setEventType("category_deleted");
-        event.setTimestamp(Timestamp.from(Instant.now()));
-        event.setCategory(categoryDTO);
+        SharedCategoryEvent event = SharedCategoryEvent.builder()
+            .eventType("category_deleted")
+            .timestamp(Timestamp.from(Instant.now()))
+            .category(categoryDTO)
+            .build();
 
         sendEvent(event);
     }
@@ -63,15 +59,14 @@ public class InfrastructureCategoryEventPublisher implements DomainPortCategoryE
     private SharedCategoryEvent createEvent(String eventType, DomainEntityCategory category) {
         SharedCategoryDTO categoryDTO = mapToSharedCategoryDTO(category);
 
-        SharedCategoryEvent event = new SharedCategoryEvent();
-        event.setEventType(eventType);
-        event.setTimestamp(Timestamp.from(Instant.now()));
-        event.setCategory(categoryDTO);
-
-        return event;
+        return SharedCategoryEvent.builder()
+            .eventType(eventType)
+            .timestamp(Timestamp.from(Instant.now()))
+            .category(categoryDTO)
+            .build();
     }
 
-    private void sendEvent(SharedCategoryEvent event) throws InfrastructureExceptionCategory {
+    private void sendEvent(SharedCategoryEvent event) {
         try {
             String message = objectMapper.writeValueAsString(event);
 
@@ -84,31 +79,33 @@ public class InfrastructureCategoryEventPublisher implements DomainPortCategoryE
                 return true;
             });
         } catch (Exception e) {
+            logger.error("Error sending event to Kafka: {}", e.getMessage(), e);
             int retryCount = 3;
             for (int i = 0; i < retryCount; i++) {
                 try {
                     kafkaTemplate.send(TOPIC, objectMapper.writeValueAsString(event)).get();
                     return;
                 } catch (Exception retryException) {
+                    logger.warn("Retry {} failed to publish event to Kafka: {}", i + 1, retryException.getMessage());
                     // Retry failed, continue to next attempt
                 }
             }
-            throw new InfrastructureExceptionCategory("Failed to publish event to Kafka after retries", e);
+            throw new InfrastructureExceptionCategory("Failed to publish event to Kafka after retries");
         }
     }
 
     private SharedCategoryDTO mapToSharedCategoryDTO(DomainEntityCategory category) {
-        SharedCategoryDTO dto = new SharedCategoryDTO();
-        dto.setId(category.getId());
-        dto.setName(category.getName());
-        dto.setDescription(category.getDescription());
-        dto.setParentCategoryId(
-            category.getParentCategory() != null ? category.getParentCategory().getId() : null
-        );
-        dto.setTags(category.getTags());
-        dto.setMetadata(category.getMetadata());
-        dto.setCreatedAt(category.getCreatedAt());
-        dto.setUpdatedAt(category.getUpdatedAt());
-        return dto;
+        return SharedCategoryDTO.builder()
+            .id(category.getId())
+            .name(category.getName())
+            .description(category.getDescription())
+            .parentCategoryId(
+                category.getParentCategory() != null ? category.getParentCategory().getId() : null
+            )
+            .tags(category.getTags())
+            .metadata(category.getMetadata())
+            .createdAt(category.getCreatedAt())
+            .updatedAt(category.getUpdatedAt())
+            .build();
     }
 }

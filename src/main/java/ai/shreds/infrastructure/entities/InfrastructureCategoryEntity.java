@@ -1,7 +1,11 @@
 package ai.shreds.infrastructure.entities;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Type;
@@ -9,6 +13,9 @@ import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.TypeDefs;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.List;
@@ -20,8 +27,11 @@ import com.vladmihalcea.hibernate.type.array.ListArrayType;
 
 @Entity
 @Table(name = "categories")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"parentCategory", "subcategories"})
 @TypeDefs({
     @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class),
     @TypeDef(name = "list-array", typeClass = ListArrayType.class)
@@ -32,8 +42,11 @@ public class InfrastructureCategoryEntity implements Serializable {
 
     @Id
     @Column(name = "id", nullable = false, updatable = false)
+    @EqualsAndHashCode.Include
     private UUID id;
 
+    @NotNull
+    @Size(max = 255)
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 

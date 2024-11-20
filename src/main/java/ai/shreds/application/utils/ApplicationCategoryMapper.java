@@ -10,95 +10,152 @@ import java.util.UUID;
 import java.util.Map;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Component;
+import java.util.Collections;
 
+/**
+ * Mapper class for converting between domain entities and shared DTOs.
+ */
+@Component
 public class ApplicationCategoryMapper {
 
+    /**
+     * Converts a SharedCreateCategoryRequest to a DomainEntityCategory.
+     * Utilizes Lombok's builder pattern for cleaner code.
+     *
+     * @param request the SharedCreateCategoryRequest containing category data
+     * @return a new DomainEntityCategory instance
+     */
     public DomainEntityCategory toDomain(SharedCreateCategoryRequest request) {
-        DomainEntityCategory category = new DomainEntityCategory();
-        category.setId(UUID.randomUUID());
-        category.setName(request.getName());
-        category.setDescription(request.getDescription());
-        
+        // Initialize builder for DomainEntityCategory
+        DomainEntityCategory.DomainEntityCategoryBuilder categoryBuilder = DomainEntityCategory.builder()
+                .id(UUID.randomUUID())
+                .name(request.getName())
+                .description(request.getDescription())
+                .createdAt(new Timestamp(System.currentTimeMillis()))
+                .updatedAt(new Timestamp(System.currentTimeMillis()));
+
+        // Set tags if provided
+        if (request.getTags() != null) {
+            categoryBuilder.tags(new ArrayList<>(request.getTags()));
+        } else {
+            categoryBuilder.tags(new ArrayList<>());
+        }
+
+        // Set metadata if provided
+        if (request.getMetadata() != null) {
+            categoryBuilder.metadata(new HashMap<>(request.getMetadata()));
+        } else {
+            categoryBuilder.metadata(new HashMap<>());
+        }
+
+        DomainEntityCategory category = categoryBuilder.build();
+
+        // Set parent category if provided
         if (request.getParentCategoryId() != null) {
             DomainEntityCategory parentCategory = new DomainEntityCategory();
             parentCategory.setId(request.getParentCategoryId());
             category.setParentCategory(parentCategory);
         }
-        
-        category.setTags(request.getTags());
-        category.setMetadata(request.getMetadata());
-        
-        Timestamp now = new Timestamp(System.currentTimeMillis());
-        category.setCreatedAt(now);
-        category.setUpdatedAt(now);
-        
+
         return category;
     }
 
+    /**
+     * Updates an existing DomainEntityCategory with data from a SharedUpdateCategoryRequest.
+     * Only updates fields that are not null in the request.
+     *
+     * @param request the SharedUpdateCategoryRequest containing updated data
+     * @param category the existing DomainEntityCategory to update
+     * @return the updated DomainEntityCategory
+     */
     public DomainEntityCategory toDomain(SharedUpdateCategoryRequest request, DomainEntityCategory category) {
+        // Update name if provided
         if (request.getName() != null) {
             category.setName(request.getName());
         }
 
+        // Update description if provided
         if (request.getDescription() != null) {
             category.setDescription(request.getDescription());
         }
 
+        // Update parent category if provided
         if (request.getParentCategoryId() != null) {
             DomainEntityCategory parentCategory = new DomainEntityCategory();
             parentCategory.setId(request.getParentCategoryId());
             category.setParentCategory(parentCategory);
         }
 
+        // Update tags if provided
         if (request.getTags() != null) {
-            category.setTags(request.getTags());
+            category.setTags(new ArrayList<>(request.getTags()));
         }
 
+        // Update metadata if provided
         if (request.getMetadata() != null) {
-            category.setMetadata(request.getMetadata());
+            category.setMetadata(new HashMap<>(request.getMetadata()));
         }
 
-        Timestamp now = new Timestamp(System.currentTimeMillis());
-        category.setUpdatedAt(now);
+        // Update the updatedAt timestamp
+        category.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
 
         return category;
     }
 
+    /**
+     * Converts a DomainEntityCategory to a SharedCategoryResponse.
+     * Recursively maps subcategories to handle hierarchy.
+     *
+     * @param category the DomainEntityCategory to convert
+     * @return a SharedCategoryResponse representing the category
+     */
     public SharedCategoryResponse toDTO(DomainEntityCategory category) {
         SharedCategoryResponse response = new SharedCategoryResponse();
         response.setId(category.getId());
         response.setName(category.getName());
         response.setDescription(category.getDescription());
-        
+
+        // Set parent category ID if parent exists
         if (category.getParentCategory() != null) {
             response.setParentCategoryId(category.getParentCategory().getId());
         }
-        
+
         response.setTags(category.getTags());
         response.setMetadata(category.getMetadata());
         response.setCreatedAt(category.getCreatedAt());
         response.setUpdatedAt(category.getUpdatedAt());
-        
+
+        // Recursively map subcategories
         if (category.getSubcategories() != null && !category.getSubcategories().isEmpty()) {
-            response.setSubcategories(category.getSubcategories()
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList()));
+            response.setSubcategories(
+                category.getSubcategories().stream()
+                    .map(this::toDTO)
+                    .collect(Collectors.toList())
+            );
         } else {
-            response.setSubcategories(new ArrayList<>());
+            response.setSubcategories(Collections.emptyList());
         }
-        
+
         return response;
     }
 
+    /**
+     * Converts a list of DomainEntityCategory instances to a list of SharedCategoryResponse instances.
+     * Handles null or empty lists by returning an empty list.
+     *
+     * @param categories the list of DomainEntityCategory instances
+     * @return a list of SharedCategoryResponse instances
+     */
     public List<SharedCategoryResponse> toDTOList(List<DomainEntityCategory> categories) {
-        if (categories == null) {
-            return new ArrayList<>();
+        if (categories == null || categories.isEmpty()) {
+            return Collections.emptyList();
         }
-        
+
         return categories.stream()
-            .map(this::toDTO)
-            .collect(Collectors.toList());
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 }

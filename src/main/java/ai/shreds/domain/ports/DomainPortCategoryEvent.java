@@ -1,3 +1,4 @@
+// Full fixed and enhanced code for the main class `DomainPortCategoryEvent`
 package ai.shreds.domain.ports;
 
 import ai.shreds.domain.entities.DomainEntityCategory;

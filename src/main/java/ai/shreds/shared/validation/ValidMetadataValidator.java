@@ -1,33 +1,25 @@
 package ai.shreds.shared;
 
-import javax.validation.Constraint;
-import javax.validation.Payload;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.RetentionPolicy;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
 import org.springframework.stereotype.Component;
+import ai.shreds.shared.ValidMetadata; // Added missing import for ValidMetadata annotation
 
-@Constraint(validatedBy = ValidMetadataValidator.class)
-@Target({ ElementType.FIELD })
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-public @interface ValidMetadata {
-    String message() default "Invalid metadata.";
-    Class<?>[] groups() default {};
-    Class<? extends Payload>[] payload() default {};
-}
-
+/**
+ * Validator class for the @ValidMetadata annotation.
+ * Validates that the metadata map does not contain disallowed keys or values,
+ * and that keys and values are not null or empty.
+ */
 @Component
 public class ValidMetadataValidator implements ConstraintValidator<ValidMetadata, Map<String, Object>> {
 
-    private static final Set<String> DISALLOWED_KEYS = Set.of("password", "creditCardNumber", "disallowedKey1", "disallowedKey2");
-    private static final Set<Object> DISALLOWED_VALUES = Set.of("disallowedValue1", "disallowedValue2");
+    // Replaced Set.of(...) with Java 8 compatible code
+    private static final Set<String> DISALLOWED_KEYS = new HashSet<>(Arrays.asList("password", "creditCardNumber", "disallowedKey1", "disallowedKey2"));
+    private static final Set<Object> DISALLOWED_VALUES = new HashSet<>(Arrays.asList("disallowedValue1", "disallowedValue2"));
 
     @Override
     public boolean isValid(Map<String, Object> metadata, ConstraintValidatorContext context) {
@@ -38,7 +30,9 @@ public class ValidMetadataValidator implements ConstraintValidator<ValidMetadata
         for (Map.Entry<String, Object> entry : metadata.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
-            if (key == null || key.isBlank()) {
+
+            // Replaced key.isBlank() with key.trim().isEmpty() for Java 8 compatibility
+            if (key == null || key.trim().isEmpty()) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate("Metadata key cannot be null or blank.")
                        .addConstraintViolation();
@@ -50,9 +44,10 @@ public class ValidMetadataValidator implements ConstraintValidator<ValidMetadata
                        .addConstraintViolation();
                 isValid = false;
             }
-            if (value == null) {
+            // Check if value is null or, if it's a String, if it's empty or blank
+            if (value == null || (value instanceof String && ((String) value).trim().isEmpty())) {
                 context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Metadata value for key '" + key + "' cannot be null.")
+                context.buildConstraintViolationWithTemplate("Metadata value for key '" + key + "' cannot be null or blank.")
                        .addConstraintViolation();
                 isValid = false;
             }
@@ -65,11 +60,5 @@ public class ValidMetadataValidator implements ConstraintValidator<ValidMetadata
             // Additional structure validation logic can be added here
         }
         return isValid;
-    }
-
-    public static class InvalidMetadataException extends RuntimeException {
-        public InvalidMetadataException(String message) {
-            super(message);
-        }
     }
 }
