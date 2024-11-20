@@ -7,6 +7,8 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import javax.sql.DataSource;
 
+import ai.shreds.infrastructure.config.DatabaseProperties;
+
 @Configuration
 @EnableJpaRepositories(basePackages = "ai.shreds.infrastructure.repositories")
 public class InfrastructureDatabaseConfig {

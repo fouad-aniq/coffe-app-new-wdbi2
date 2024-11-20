@@ -4,14 +4,14 @@ import ai.shreds.domain.entities.DomainEntityCategory;
 import ai.shreds.domain.ports.DomainPortCategoryRepository;
 import ai.shreds.infrastructure.entities.InfrastructureCategoryEntity;
 import ai.shreds.infrastructure.exceptions.InfrastructureExceptionCategory;
-import ai.shreds.infrastructure.repositories.jpa.InfrastructureCategoryEntityRepository;
+import ai.shreds.infrastructure.repositories.jpa.JpaCategoryRepository;
 import ai.shreds.infrastructure.utils.InfrastructureCategoryEntityMapper;
 import ai.shreds.shared.SharedCategoryFilterCriteria;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
-import org.springframework.dao.DataAccessException;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,11 +21,11 @@ import java.util.stream.Collectors;
 @Repository
 public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryRepository {
 
-    private final InfrastructureCategoryEntityRepository categoryRepository;
+    private final JpaCategoryRepository categoryRepository;
     private final InfrastructureCategoryEntityMapper categoryMapper;
 
     @Autowired
-    public InfrastructureRepositoryCategoryImpl(InfrastructureCategoryEntityRepository categoryRepository,
+    public InfrastructureRepositoryCategoryImpl(JpaCategoryRepository categoryRepository,
                                                 InfrastructureCategoryEntityMapper categoryMapper) {
         this.categoryRepository = categoryRepository;
         this.categoryMapper = categoryMapper;
@@ -38,7 +38,7 @@ public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryR
             InfrastructureCategoryEntity savedEntity = categoryRepository.save(entity);
             return categoryMapper.toDomain(savedEntity);
         } catch (DataAccessException e) {
-            throw new InfrastructureExceptionCategory("Error saving category");
+            throw new InfrastructureExceptionCategory("Error saving category", e);
         }
     }
 
@@ -48,7 +48,7 @@ public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryR
             Optional<InfrastructureCategoryEntity> entityOptional = categoryRepository.findById(categoryId);
             return entityOptional.map(categoryMapper::toDomain);
         } catch (DataAccessException e) {
-            throw new InfrastructureExceptionCategory("Error finding category by ID");
+            throw new InfrastructureExceptionCategory("Error finding category by ID", e);
         }
     }
 
@@ -61,19 +61,19 @@ public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryR
                     .map(categoryMapper::toDomain)
                     .collect(Collectors.toList());
         } catch (DataAccessException e) {
-            throw new InfrastructureExceptionCategory("Error finding all categories");
+            throw new InfrastructureExceptionCategory("Error finding all categories", e);
         }
     }
 
     @Override
     public List<DomainEntityCategory> findByParentCategoryId(UUID parentCategoryId) {
         try {
-            List<InfrastructureCategoryEntity> entities = categoryRepository.findByParentCategory_Id(parentCategoryId);
+            List<InfrastructureCategoryEntity> entities = categoryRepository.findByParentCategoryId(parentCategoryId);
             return entities.stream()
                     .map(categoryMapper::toDomain)
                     .collect(Collectors.toList());
         } catch (DataAccessException e) {
-            throw new InfrastructureExceptionCategory("Error finding categories by parent category ID");
+            throw new InfrastructureExceptionCategory("Error finding categories by parent category ID", e);
         }
     }
 
@@ -85,7 +85,7 @@ public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryR
                     .map(categoryMapper::toDomain)
                     .collect(Collectors.toList());
         } catch (DataAccessException e) {
-            throw new InfrastructureExceptionCategory("Error finding categories by tags");
+            throw new InfrastructureExceptionCategory("Error finding categories by tags", e);
         }
     }
 
@@ -94,7 +94,7 @@ public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryR
         try {
             categoryRepository.deleteById(categoryId);
         } catch (DataAccessException e) {
-            throw new InfrastructureExceptionCategory("Error deleting category by ID");
+            throw new InfrastructureExceptionCategory("Error deleting category by ID", e);
         }
     }
 
@@ -104,7 +104,7 @@ public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryR
             InfrastructureCategoryEntity entity = categoryMapper.toInfrastructure(category);
             categoryRepository.delete(entity);
         } catch (DataAccessException e) {
-            throw new InfrastructureExceptionCategory("Error deleting category");
+            throw new InfrastructureExceptionCategory("Error deleting category", e);
         }
     }
 
@@ -113,7 +113,7 @@ public class InfrastructureRepositoryCategoryImpl implements DomainPortCategoryR
         try {
             return categoryRepository.existsById(categoryId);
         } catch (DataAccessException e) {
-            throw new InfrastructureExceptionCategory("Error checking if category exists by ID");
+            throw new InfrastructureExceptionCategory("Error checking if category exists by ID", e);
         }
     }
 }

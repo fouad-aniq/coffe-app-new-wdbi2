@@ -1,60 +1,38 @@
 package ai.shreds.shared;
 
 import lombok.Data;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-import org.hibernate.validator.constraints.UniqueElements;
-import javax.validation.Valid;
-
-import java.util.UUID;
+import javax.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
-/**
- * Request DTO for creating a new category.
- * Enforces field validation constraints to ensure data integrity.
- */
+import org.hibernate.validator.constraints.UniqueElements;
+import ai.shreds.shared.ValidCategoryParent;
+import ai.shreds.shared.ValidMetadata;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class SharedCreateCategoryRequest {
 
-    /**
-     * Name of the category.
-     */
-    @NotNull(message = "The 'name' field is required")
-    @Size(max = 255, message = "The 'name' field must be at most 255 characters")
+    @NotNull(message = "Name cannot be null")
+    @NotEmpty(message = "Name cannot be empty")
     private String name;
 
-    /**
-     * Description of the category.
-     */
-    @Size(max = 1000, message = "The 'description' field must be at most 1000 characters")
     private String description;
 
-    /**
-     * ID of the parent category if it exists.
-     */
-    private UUID parentCategoryId;
+    @UniqueElements(message = "Tags must be unique within the category")
+    private List<@NotEmpty(message = "Tag cannot be empty") String> tags;
 
-    /**
-     * List of tags associated with the category.
-     */
-    @UniqueElements(message = "Tags should be unique within the category to prevent duplicate tag entries")
-    @Size(max = 10, message = "A maximum of 10 tags are allowed")
-    private List<
-        @Size(max = 50, message = "Each tag must be at most 50 characters")
-        String> tags;
-
-    /**
-     * Additional metadata for the category.
-     */
-    @Valid
+    @ValidMetadata
     private Map<String, Object> metadata;
 
+    @ValidCategoryParent
+    private UUID parentCategoryId;
 }

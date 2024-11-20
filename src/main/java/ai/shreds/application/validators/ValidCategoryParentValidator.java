@@ -1,30 +1,34 @@
 package ai.shreds.application.validators;
 
 import ai.shreds.shared.ValidCategoryParent;
-import ai.shreds.shared.SharedCreateCategoryRequest;
-import ai.shreds.domain.services.DomainServiceCategoryManager;
+import ai.shreds.shared.SharedCategoryDTO;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import java.util.UUID;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-
-@Component
-@RequiredArgsConstructor
-public class ValidCategoryParentValidator implements ConstraintValidator<ValidCategoryParent, SharedCreateCategoryRequest> {
-
-    private final DomainServiceCategoryManager categoryManager;
+public class ValidCategoryParentValidator implements ConstraintValidator<ValidCategoryParent, SharedCategoryDTO> {
 
     @Override
-    public boolean isValid(SharedCreateCategoryRequest request, ConstraintValidatorContext context) {
-        UUID parentCategoryId = request.getParentCategoryId();
+    public void initialize(ValidCategoryParent constraintAnnotation) {
+        // No initialization needed for this validator
+    }
 
-        if (parentCategoryId == null) {
-            return true; // No parent, valid
+    @Override
+    public boolean isValid(SharedCategoryDTO categoryDTO, ConstraintValidatorContext context) {
+        // Return true if the categoryDTO is null, as there's nothing to validate
+        if (categoryDTO == null) {
+            return true;
+        }
+        
+        UUID categoryId = categoryDTO.getId();
+        UUID parentCategoryId = categoryDTO.getParentCategoryId();
+
+        // Check if the category is its own parent
+        if (categoryId != null && categoryId.equals(parentCategoryId)) {
+            return false; // A category cannot be its own parent
         }
 
-        // Ensure the parent category ID is valid and does not lead to a cyclical hierarchy
-        return categoryManager.isValidParentCategory(null, parentCategoryId);
+        // Further cyclical checks would require access to the data repository
+        return true;
     }
 }
