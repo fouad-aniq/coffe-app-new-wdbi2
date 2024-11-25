@@ -1,1 +1,32 @@
-\npackage ai.shreds.infrastructure.config;\n\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.boot.jdbc.DataSourceBuilder;\nimport org.springframework.data.jpa.repository.config.EnableJpaRepositories;\nimport javax.sql.DataSource;\nimport ai.shreds.infrastructure.config.DatabaseProperties;\n\n@Configuration\n@EnableJpaRepositories(basePackages = \"ai.shreds.infrastructure.repositories\")\npublic class InfrastructureDatabaseConfig {\n\n    private final DatabaseProperties databaseProperties;\n\n    @Autowired\n    public InfrastructureDatabaseConfig(DatabaseProperties databaseProperties) {\n        this.databaseProperties = databaseProperties;\n    }\n\n    @Bean\n    public DataSource configureDataSource() {\n        return DataSourceBuilder.create()\n                .driverClassName(databaseProperties.getDriverClassName())\n                .url(databaseProperties.getUrl())\n                .username(databaseProperties.getUsername())\n                .password(databaseProperties.getPassword())\n                .build();\n    }\n}\n
+
+package ai.shreds.infrastructure.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import javax.sql.DataSource;
+import ai.shreds.infrastructure.config.DatabaseProperties;
+
+@Configuration
+@EnableJpaRepositories(basePackages = \"ai.shreds.infrastructure.repositories\")
+public class InfrastructureDatabaseConfig {
+
+    private final DatabaseProperties databaseProperties;
+
+    @Autowired
+    public InfrastructureDatabaseConfig(DatabaseProperties databaseProperties) {
+        this.databaseProperties = databaseProperties;
+    }
+
+    @Bean
+    public DataSource configureDataSource() {
+        return DataSourceBuilder.create()
+                .driverClassName(databaseProperties.getDriverClassName())
+                .url(databaseProperties.getUrl())
+                .username(databaseProperties.getUsername())
+                .password(databaseProperties.getPassword())
+                .build();
+    }
+}

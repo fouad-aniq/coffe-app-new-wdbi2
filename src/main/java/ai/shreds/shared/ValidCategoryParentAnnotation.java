@@ -1,1 +1,24 @@
-\npackage ai.shreds.shared;\n\nimport javax.validation.Constraint;\nimport javax.validation.Payload;\nimport java.lang.annotation.Documented;\nimport java.lang.annotation.Retention;\nimport java.lang.annotation.Target;\nimport java.lang.annotation.ElementType;\nimport java.lang.annotation.RetentionPolicy;\n\nimport ai.shreds.application.validators.ValidCategoryParentValidator;\n\n@Documented\n@Constraint(validatedBy = ValidCategoryParentValidator.class)\n@Target({ ElementType.FIELD, ElementType.METHOD })\n@Retention(RetentionPolicy.RUNTIME)\npublic @interface ValidCategoryParent {\n    \n    String message() default \"Invalid category parent.\";\n    \n    Class<?>[] groups() default {};\n    \n    Class<? extends Payload>[] payload() default {};\n}\n
+package ai.shreds.shared;
+
+import javax.validation.Constraint;
+import javax.validation.Payload;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.RetentionPolicy;
+
+import ai.shreds.application.validators.ValidCategoryParentValidator;
+
+@Documented
+@Constraint(validatedBy = ValidCategoryParentValidator.class)
+@Target({ ElementType.FIELD, ElementType.METHOD })
+@Retention(RetentionPolicy.RUNTIME)
+public @interface ValidCategoryParent {
+    
+    String message() default \"Invalid category parent.\";
+    
+    Class<?>[] groups() default {};
+    
+    Class<? extends Payload>[] payload() default {};
+}

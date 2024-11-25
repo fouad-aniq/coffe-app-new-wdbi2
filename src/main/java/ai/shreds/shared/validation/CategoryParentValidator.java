@@ -1,1 +1,55 @@
-\npackage ai.shreds.shared;\n\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Set;\nimport java.util.UUID;\n\nimport lombok.experimental.UtilityClass;\nimport ai.shreds.shared.SharedCategoryResponse;\n\n/**\n * Utility class for validating parent categories to prevent circular references and invalid parent assignments.\n */\n@UtilityClass\npublic class CategoryParentValidator {\n\n    /**\n     * Validates that the new parent category ID is valid for the given category.\n     *\n     * @param category             The category being updated.\n     * @param newParentCategoryId  The ID of the proposed new parent category.\n     * @throws IllegalArgumentException if the new parent category ID is invalid.\n     */\n    public void validateParentCategory(SharedCategoryResponse category, UUID newParentCategoryId) {\n        if (newParentCategoryId == null) {\n            // No parent to validate\n            return;\n        }\n        if (newParentCategoryId.equals(category.getId())) {\n            throw new IllegalArgumentException(\"A category cannot be a descendant of itself.\");\n        }\n        Set<UUID> descendantIds = getDescendantCategoryIds(category);\n        if (descendantIds.contains(newParentCategoryId)) {\n            throw new IllegalArgumentException(\"Cyclical hierarchy detected.\");\n        }\n    }\n\n    /**\n     * Recursively collects all descendant category IDs of the given category.\n     *\n     * @param category The category whose descendants are to be collected.\n     * @return A set of UUIDs representing the IDs of all descendant categories.\n     */\n    private Set<UUID> getDescendantCategoryIds(SharedCategoryResponse category) {\n        Set<UUID> descendantIds = new HashSet<>();\n        List<SharedCategoryResponse> subcategories = category.getSubcategories();\n        if (subcategories != null) {\n            for (SharedCategoryResponse subcategory : subcategories) {\n                descendantIds.add(subcategory.getId());\n                descendantIds.addAll(getDescendantCategoryIds(subcategory));\n            }\n        }\n        return descendantIds;\n    }\n}\n
+package ai.shreds.shared;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+import lombok.experimental.UtilityClass;
+import ai.shreds.shared.SharedCategoryResponse;
+
+/**
+ * Utility class for validating parent categories to prevent circular references and invalid parent assignments.
+ */
+@UtilityClass
+public class CategoryParentValidator {
+
+    /**
+     * Validates that the new parent category ID is valid for the given category.
+     *
+     * @param category             The category being updated.
+     * @param newParentCategoryId  The ID of the proposed new parent category.
+     * @throws IllegalArgumentException if the new parent category ID is invalid.
+     */
+    public void validateParentCategory(SharedCategoryResponse category, UUID newParentCategoryId) {
+        if (newParentCategoryId == null) {
+            // No parent to validate
+            return;
+        }
+        if (newParentCategoryId.equals(category.getId())) {
+            throw new IllegalArgumentException(\"A category cannot be a descendant of itself.\");
+        }
+        Set<UUID> descendantIds = getDescendantCategoryIds(category);
+        if (descendantIds.contains(newParentCategoryId)) {
+            throw new IllegalArgumentException(\"Cyclical hierarchy detected.\");
+        }
+    }
+
+    /**
+     * Recursively collects all descendant category IDs of the given category.
+     *
+     * @param category The category whose descendants are to be collected.
+     * @return A set of UUIDs representing the IDs of all descendant categories.
+     */
+    private Set<UUID> getDescendantCategoryIds(SharedCategoryResponse category) {
+        Set<UUID> descendantIds = new HashSet<>();
+        List<SharedCategoryResponse> subcategories = category.getSubcategories();
+        if (subcategories != null) {
+            for (SharedCategoryResponse subcategory : subcategories) {
+                descendantIds.add(subcategory.getId());
+                descendantIds.addAll(getDescendantCategoryIds(subcategory));
+            }
+        }
+        return descendantIds;
+    }
+}

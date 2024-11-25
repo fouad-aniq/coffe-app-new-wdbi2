@@ -1,4 +1,4 @@
-\npackage ai.shreds.infrastructure.external_services;
+package ai.shreds.infrastructure.external_services;
 
 import ai.shreds.domain.entities.DomainEntityCategory;
 import ai.shreds.domain.ports.DomainPortCategoryEvent;

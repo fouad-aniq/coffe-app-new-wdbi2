@@ -1,1 +1,21 @@
-\npackage ai.shreds.shared;\n\nimport javax.validation.Constraint;\nimport javax.validation.Payload;\nimport java.lang.annotation.*;\nimport ai.shreds.application.validators.ValidCategoryParentValidator;\n\n/**\n * Custom annotation for validating that a category's parent is valid.\n */\n@Constraint(validatedBy = ValidCategoryParentValidator.class)\n@Target({ ElementType.TYPE })\n@Retention(RetentionPolicy.RUNTIME)\n@Documented\npublic @interface ValidCategoryParent {\n    String message() default \"Invalid parent category. A category cannot be its own parent or a descendant of itself.\";\n\n    Class<?>[] groups() default {};\n\n    Class<? extends Payload>[] payload() default {};\n}\n
+package ai.shreds.shared;
+
+import javax.validation.Constraint;
+import javax.validation.Payload;
+import java.lang.annotation.*;
+import ai.shreds.application.validators.ValidCategoryParentValidator;
+
+/**
+ * Custom annotation for validating that a category's parent is valid.
+ */
+@Constraint(validatedBy = ValidCategoryParentValidator.class)
+@Target({ ElementType.TYPE })
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface ValidCategoryParent {
+    String message() default \"Invalid parent category. A category cannot be its own parent or a descendant of itself.\";
+
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
+}
