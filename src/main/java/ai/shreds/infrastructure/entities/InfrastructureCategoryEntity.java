@@ -1,80 +1,78 @@
 package ai.shreds.infrastructure.entities;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.TypeDefs;
+
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import com.vladmihalcea.hibernate.type.array.ListArrayType;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-import java.time.LocalDateTime;
-import java.util.*;
 
-/**
- * Represents a category that can be hierarchically structured and associated with multiple tags for flexible classification.
- */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+import java.io.Serializable;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 @Entity
-@Table(name = "categories", uniqueConstraints = {@UniqueConstraint(columnNames = {"name", "parent_category_id"})})
-public class InfrastructureCategoryEntity {
+@Table(name = \"categories\")
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {\"parentCategory\", \"subcategories\"})
+@TypeDefs({
+    @TypeDef(name = \"jsonb\", typeClass = JsonBinaryType.class),
+    @TypeDef(name = \"list-array\", typeClass = ListArrayType.class)
+})
+public class InfrastructureCategoryEntity implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(nullable = false)
+    @Column(name = \"id\", nullable = false, updatable = false)
+    @EqualsAndHashCode.Include
     private UUID id;
 
     @NotNull
     @Size(max = 255)
-    @Column(nullable = false, length = 255)
+    @Column(name = \"name\", nullable = false, length = 255)
     private String name;
 
-    @Size(max = 500)
-    @Column(length = 500)
+    @Column(name = \"description\")
     private String description;
 
-    /**
-     * Self-referential association to represent the parent category.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_category_id")
+    @JoinColumn(name = \"parent_category_id\")
     private InfrastructureCategoryEntity parentCategory;
 
-    /**
-     * Self-referential association to represent child categories.
-     */
-    @OneToMany(mappedBy = "parentCategory", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<InfrastructureCategoryEntity> subcategories = new ArrayList<>();
+    @OneToMany(mappedBy = \"parentCategory\", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<InfrastructureCategoryEntity> subcategories;
 
-    /**
-     * Tags associated with the category for flexible classification.
-     * Tags are unique within the category to prevent duplicates.
-     */
-    @ElementCollection
-    @CollectionTable(name = "category_tags", joinColumns = @JoinColumn(name = "category_id"))
-    @Column(name = "tag")
-    private Set<String> tags = new HashSet<>();
+    @Type(type = \"list-array\")
+    @Column(name = \"tags\", columnDefinition = \"text[]\")
+    private List<String> tags;
 
-    /**
-     * Metadata in JSON format.
-     */
-    @Type(type = "jsonb")
-    @Column(columnDefinition = "jsonb")
-    private Map<String, Object> metadata = new HashMap<>();
+    @Type(type = \"jsonb\")
+    @Column(name = \"metadata\", columnDefinition = \"jsonb\")
+    private Map<String, Object> metadata;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = \"created_at\", nullable = false, updatable = false)
+    private Timestamp createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    // Validation logic has been moved to appropriate service or validator classes to maintain separation of concerns.
+    @Column(name = \"updated_at\", nullable = false)
+    private Timestamp updatedAt;
 }

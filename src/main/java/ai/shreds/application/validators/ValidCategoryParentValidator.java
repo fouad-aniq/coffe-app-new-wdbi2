@@ -1,12 +1,19 @@
 package ai.shreds.application.validators;
 
 import ai.shreds.shared.ValidCategoryParent;
-import ai.shreds.shared.SharedCategoryDTO;
+import ai.shreds.shared.SharedCreateCategoryRequest;
+import ai.shreds.domain.services.DomainServiceCategoryManager;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
-public class ValidCategoryParentValidator implements ConstraintValidator<ValidCategoryParent, SharedCategoryDTO> {
+@Component
+@RequiredArgsConstructor
+public class ValidCategoryParentValidator implements ConstraintValidator<ValidCategoryParent, SharedCreateCategoryRequest> {
+
+    private final DomainServiceCategoryManager categoryManager;
 
     @Override
     public void initialize(ValidCategoryParent constraintAnnotation) {
@@ -14,21 +21,11 @@ public class ValidCategoryParentValidator implements ConstraintValidator<ValidCa
     }
 
     @Override
-    public boolean isValid(SharedCategoryDTO categoryDTO, ConstraintValidatorContext context) {
-        // Return true if the categoryDTO is null, as there's nothing to validate
-        if (categoryDTO == null) {
+    public boolean isValid(SharedCreateCategoryRequest request, ConstraintValidatorContext context) {
+        UUID parentCategoryId = request.getParentCategoryId();
+        if (parentCategoryId == null) {
             return true;
         }
-        
-        UUID categoryId = categoryDTO.getId();
-        UUID parentCategoryId = categoryDTO.getParentCategoryId();
-
-        // Check if the category is its own parent
-        if (categoryId != null && categoryId.equals(parentCategoryId)) {
-            return false; // A category cannot be its own parent
-        }
-
-        // Further cyclical checks would require access to the data repository
-        return true;
+        return categoryManager.isValidParentCategory(null, parentCategoryId);
     }
 }

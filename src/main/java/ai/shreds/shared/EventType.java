@@ -1,26 +1,12 @@
 package ai.shreds.shared;
 
+/**
+ * Enum representing the types of events for category operations.
+ * It includes types like CREATED, UPDATED, and DELETED to specify
+ * the nature of the event occurring in the system.
+ */
 public enum EventType {
-    CATEGORY_CREATED("category_created"),
-    CATEGORY_UPDATED("category_updated"),
-    CATEGORY_DELETED("category_deleted");
-
-    private final String value;
-
-    EventType(String value) {
-        this.value = value;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public static EventType fromValue(String value) {
-        for (EventType eventType : EventType.values()) {
-            if (eventType.value.equals(value)) {
-                return eventType;
-            }
-        }
-        throw new IllegalArgumentException("Invalid event type: " + value);
-    }
+    CREATED,
+    UPDATED,
+    DELETED
 }

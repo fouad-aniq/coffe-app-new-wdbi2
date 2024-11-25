@@ -1,34 +1,39 @@
 package ai.shreds.domain.entities;
 
-import java.util.UUID;
-import java.util.List;
-import java.util.Map;
+import lombok.*;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import java.util.*;
 import java.sql.Timestamp;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
+/**
+ * Represents a category that can be hierarchically structured and associated with multiple tags for flexible classification.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"parentCategory", "subcategories"})
-@ToString(exclude = {"parentCategory", "subcategories"})
+@Builder
 public class DomainEntityCategory {
-    private UUID id;
-    private String name;
-    private String description;
-    private DomainEntityCategory parentCategory;
-    private List<String> tags;
-    private Map<String, Object> metadata;
-    private Timestamp createdAt;
-    private Timestamp updatedAt;
-    private List<DomainEntityCategory> subcategories;
 
-    // Method to set the ID of the category
-    public void setId(UUID id) {
-        this.id = id;
-    }
+    private UUID id;
+
+    @NotNull
+    @Size(max = 255)
+    private String name;
+
+    private String description;
+
+    private DomainEntityCategory parentCategory;
+
+    @Singular("tag")
+    private List<String> tags = new ArrayList<>();
+
+    private Map<String, Object> metadata = new HashMap<>();
+
+    private Timestamp createdAt;
+
+    private Timestamp updatedAt;
+
+    @Singular("subcategory")
+    private List<DomainEntityCategory> subcategories = new ArrayList<>();
 }
