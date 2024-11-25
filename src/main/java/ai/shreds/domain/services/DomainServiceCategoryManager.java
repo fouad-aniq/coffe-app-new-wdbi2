@@ -1,4 +1,4 @@
-package ai.shreds.domain.services;
+\npackage ai.shreds.domain.services;
 
 import ai.shreds.domain.entities.DomainEntityCategory;
 import ai.shreds.domain.exceptions.DomainExceptionCategory;
