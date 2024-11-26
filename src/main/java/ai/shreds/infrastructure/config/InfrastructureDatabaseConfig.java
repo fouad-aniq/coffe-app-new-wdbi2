@@ -10,7 +10,7 @@ import javax.sql.DataSource;
 import ai.shreds.infrastructure.config.DatabaseProperties;
 
 @Configuration
-@EnableJpaRepositories(basePackages = \"ai.shreds.infrastructure.repositories\")
+@EnableJpaRepositories(basePackages = "ai.shreds.infrastructure.repositories")
 public class InfrastructureDatabaseConfig {
 
     private final DatabaseProperties databaseProperties;

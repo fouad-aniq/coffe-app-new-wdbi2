@@ -24,13 +24,13 @@ public class DomainServiceCategoryManager {
         if (category.getParentCategory() != null) {
             UUID parentCategoryId = category.getParentCategory().getId();
             DomainEntityCategory parentCategory = categoryRepository.findById(parentCategoryId)
-                    .orElseThrow(() -> new DomainExceptionCategory(\"Parent category not found\", \"PARENT_CATEGORY_NOT_FOUND\"));
+                    .orElseThrow(() -> new DomainExceptionCategory("Parent category not found", "PARENT_CATEGORY_NOT_FOUND"));
             category.setParentCategory(parentCategory);
         }
         boolean nameExists = categoryRepository.existsByNameAndParentCategoryId(category.getName(),
                 category.getParentCategory() != null ? category.getParentCategory().getId() : null);
         if (nameExists) {
-            throw new DomainExceptionCategory(\"Category name must be unique under the same parent\", \"DUPLICATE_CATEGORY_NAME\");
+            throw new DomainExceptionCategory("Category name must be unique under the same parent", "DUPLICATE_CATEGORY_NAME");
         }
         DomainEntityCategory savedCategory = categoryRepository.save(category);
         categoryEventPublisher.publishCategoryCreatedEvent(savedCategory);
@@ -39,7 +39,7 @@ public class DomainServiceCategoryManager {
 
     public DomainEntityCategory updateCategory(UUID categoryId, DomainEntityCategory updatedData) throws DomainExceptionCategory {
         DomainEntityCategory existingCategory = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new DomainExceptionCategory(\"Category not found\", \"CATEGORY_NOT_FOUND\"));
+                .orElseThrow(() -> new DomainExceptionCategory("Category not found", "CATEGORY_NOT_FOUND"));
         existingCategory.setName(updatedData.getName());
         existingCategory.setDescription(updatedData.getDescription());
         existingCategory.setTags(updatedData.getTags());
@@ -48,7 +48,7 @@ public class DomainServiceCategoryManager {
         if (updatedData.getParentCategory() != null) {
             UUID parentCategoryId = updatedData.getParentCategory().getId();
             DomainEntityCategory parentCategory = categoryRepository.findById(parentCategoryId)
-                    .orElseThrow(() -> new DomainExceptionCategory(\"Parent category not found\", \"PARENT_CATEGORY_NOT_FOUND\"));
+                    .orElseThrow(() -> new DomainExceptionCategory("Parent category not found", "PARENT_CATEGORY_NOT_FOUND"));
             existingCategory.setParentCategory(parentCategory);
         } else {
             existingCategory.setParentCategory(null);
@@ -57,7 +57,7 @@ public class DomainServiceCategoryManager {
                 existingCategory.getParentCategory() != null ? existingCategory.getParentCategory().getId() : null,
                 categoryId);
         if (nameExists) {
-            throw new DomainExceptionCategory(\"Category name must be unique under the same parent\", \"DUPLICATE_CATEGORY_NAME\");
+            throw new DomainExceptionCategory("Category name must be unique under the same parent", "DUPLICATE_CATEGORY_NAME");
         }
         DomainEntityCategory savedCategory = categoryRepository.save(existingCategory);
         categoryEventPublisher.publishCategoryUpdatedEvent(savedCategory);
@@ -66,13 +66,13 @@ public class DomainServiceCategoryManager {
 
     public void deleteCategory(UUID categoryId, boolean cascade) throws DomainExceptionCategory {
         DomainEntityCategory category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new DomainExceptionCategory(\"Category not found\", \"CATEGORY_NOT_FOUND\"));
+                .orElseThrow(() -> new DomainExceptionCategory("Category not found", "CATEGORY_NOT_FOUND"));
         if (cascade) {
             deleteSubcategories(category);
         } else {
             List<DomainEntityCategory> subcategories = categoryRepository.findByParentCategoryId(categoryId);
             if (!subcategories.isEmpty()) {
-                throw new DomainExceptionCategory(\"Category has subcategories and cannot be deleted without cascade\", \"CATEGORY_HAS_SUBCATEGORIES\");
+                throw new DomainExceptionCategory("Category has subcategories and cannot be deleted without cascade", "CATEGORY_HAS_SUBCATEGORIES");
             }
         }
         categoryRepository.delete(category);
@@ -81,7 +81,7 @@ public class DomainServiceCategoryManager {
 
     public DomainEntityCategory getCategoryById(UUID categoryId) throws DomainExceptionCategory {
         DomainEntityCategory category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new DomainExceptionCategory(\"Category not found\", \"CATEGORY_NOT_FOUND\"));
+                .orElseThrow(() -> new DomainExceptionCategory("Category not found", "CATEGORY_NOT_FOUND"));
         category.setSubcategories(getSubcategories(category));
         return category;
     }

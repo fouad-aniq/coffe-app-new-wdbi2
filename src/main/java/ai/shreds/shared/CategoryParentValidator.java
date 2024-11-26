@@ -1,3 +1,4 @@
+
 package ai.shreds.shared;
 
 import java.util.HashSet;
@@ -5,12 +6,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import lombok.experimental.UtilityClass; // Import Lombok's UtilityClass to simplify utility class pattern
+import lombok.experimental.UtilityClass;
+import ai.shreds.shared.SharedCategoryResponse;
 
 /**
  * Utility class for validating parent categories to prevent circular references and invalid parent assignments.
  */
-@UtilityClass // Lombok annotation to define utility class and handle private constructor and static methods implicitly
+@UtilityClass
 public class CategoryParentValidator {
 
     /**
@@ -26,11 +28,11 @@ public class CategoryParentValidator {
             return;
         }
         if (newParentCategoryId.equals(category.getId())) {
-            throw new IllegalArgumentException("A category cannot be its own parent.");
+            throw new IllegalArgumentException("A category cannot be a descendant of itself.");
         }
         Set<UUID> descendantIds = getDescendantCategoryIds(category);
         if (descendantIds.contains(newParentCategoryId)) {
-            throw new IllegalArgumentException("A category cannot be assigned as a parent to its descendant.");
+            throw new IllegalArgumentException("Cyclical hierarchy detected.");
         }
     }
 

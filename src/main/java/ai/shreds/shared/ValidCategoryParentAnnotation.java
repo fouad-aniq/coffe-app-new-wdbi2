@@ -16,7 +16,7 @@ import ai.shreds.application.validators.ValidCategoryParentValidator;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidCategoryParent {
     
-    String message() default \"Invalid category parent.\";
+    String message() default "Invalid category parent.";
     
     Class<?>[] groups() default {};
     

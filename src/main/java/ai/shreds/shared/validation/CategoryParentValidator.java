@@ -1,3 +1,4 @@
+
 package ai.shreds.shared;
 
 import java.util.HashSet;
@@ -27,11 +28,11 @@ public class CategoryParentValidator {
             return;
         }
         if (newParentCategoryId.equals(category.getId())) {
-            throw new IllegalArgumentException(\"A category cannot be a descendant of itself.\");
+            throw new IllegalArgumentException("A category cannot be a descendant of itself.");
         }
         Set<UUID> descendantIds = getDescendantCategoryIds(category);
         if (descendantIds.contains(newParentCategoryId)) {
-            throw new IllegalArgumentException(\"Cyclical hierarchy detected.\");
+            throw new IllegalArgumentException("Cyclical hierarchy detected.");
         }
     }
 

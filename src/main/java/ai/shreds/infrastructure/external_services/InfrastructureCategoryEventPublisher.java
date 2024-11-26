@@ -1,3 +1,4 @@
+
 package ai.shreds.infrastructure.external_services;
 
 import ai.shreds.domain.entities.DomainEntityCategory;
@@ -9,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -23,27 +23,21 @@ import java.util.concurrent.ExecutionException;
 @RequiredArgsConstructor
 public class InfrastructureCategoryEventPublisher implements DomainPortCategoryEvent {
 
-    @Value(\"${kafka.topic.category-events}\")
-    private String topic;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ObjectMapper objectMapper;
+    private final String topic;
 
     private static final Logger logger = LoggerFactory.getLogger(InfrastructureCategoryEventPublisher.class);
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
-    private final ObjectMapper objectMapper;
-
-    private static final String EVENT_TYPE_CREATED = \"category_created\";
-    private static final String EVENT_TYPE_UPDATED = \"category_updated\";
-    private static final String EVENT_TYPE_DELETED = \"category_deleted\";
-
     @Override
     public void publishCategoryCreatedEvent(DomainEntityCategory category) {
-        SharedCategoryEvent event = createEvent(EVENT_TYPE_CREATED, category);
+        SharedCategoryEvent event = createEvent(CategoryEventType.CREATED, category);
         sendEvent(event);
     }
 
     @Override
     public void publishCategoryUpdatedEvent(DomainEntityCategory category) {
-        SharedCategoryEvent event = createEvent(EVENT_TYPE_UPDATED, category);
+        SharedCategoryEvent event = createEvent(CategoryEventType.UPDATED, category);
         sendEvent(event);
     }
 
@@ -54,7 +48,7 @@ public class InfrastructureCategoryEventPublisher implements DomainPortCategoryE
             .build();
 
         SharedCategoryEvent event = SharedCategoryEvent.builder()
-            .eventType(EVENT_TYPE_DELETED)
+            .eventType(CategoryEventType.DELETED.getType())
             .timestamp(Timestamp.from(Instant.now()))
             .category(categoryDTO)
             .build();
@@ -62,11 +56,11 @@ public class InfrastructureCategoryEventPublisher implements DomainPortCategoryE
         sendEvent(event);
     }
 
-    private SharedCategoryEvent createEvent(String eventType, DomainEntityCategory category) {
+    private SharedCategoryEvent createEvent(CategoryEventType eventType, DomainEntityCategory category) {
         SharedCategoryDTO categoryDTO = mapToSharedCategoryDTO(category);
 
         return SharedCategoryEvent.builder()
-            .eventType(eventType)
+            .eventType(eventType.getType())
             .timestamp(Timestamp.from(Instant.now()))
             .category(categoryDTO)
             .build();
@@ -80,23 +74,24 @@ public class InfrastructureCategoryEventPublisher implements DomainPortCategoryE
                 try {
                     operations.send(topic, message).get();
                 } catch (InterruptedException | ExecutionException e) {
-                    throw new KafkaException(\"Failed to send message\", e);
+                    Thread.currentThread().interrupt();
+                    throw new CustomKafkaException("Failed to send message", e);
                 }
                 return true;
             });
         } catch (Exception e) {
-            logger.error(\"Error sending event to Kafka: {}\", e.getMessage(), e);
+            logger.error("Error sending event to Kafka: {}", e.getMessage(), e);
             int retryCount = 3;
             for (int i = 0; i < retryCount; i++) {
                 try {
                     kafkaTemplate.send(topic, objectMapper.writeValueAsString(event)).get();
                     return;
                 } catch (Exception retryException) {
-                    logger.warn(\"Retry {} failed to publish event to Kafka: {}\", i + 1, retryException.getMessage());
+                    logger.warn("Retry {} failed to publish event to Kafka: {}", i + 1, retryException.getMessage());
                     // Retry failed, continue to next attempt
                 }
             }
-            throw new InfrastructureExceptionCategory(\"Failed to publish event to Kafka after retries\", e);
+            throw new InfrastructureExceptionCategory("Failed to publish event to Kafka after retries", e);
         }
     }
 

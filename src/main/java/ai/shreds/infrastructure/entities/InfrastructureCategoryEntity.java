@@ -26,53 +26,53 @@ import java.util.Map;
 import java.util.UUID;
 
 @Entity
-@Table(name = \"categories\")
+@Table(name = "categories")
 @Getter
 @Setter
 @NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@ToString(exclude = {\"parentCategory\", \"subcategories\"})
+@ToString(exclude = {"parentCategory", "subcategories"})
 @TypeDefs({
-    @TypeDef(name = \"jsonb\", typeClass = JsonBinaryType.class),
-    @TypeDef(name = \"list-array\", typeClass = ListArrayType.class)
+    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class),
+    @TypeDef(name = "list-array", typeClass = ListArrayType.class)
 })
 public class InfrastructureCategoryEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @Id
-    @Column(name = \"id\", nullable = false, updatable = false)
+    @Column(name = "id", nullable = false, updatable = false)
     @EqualsAndHashCode.Include
     private UUID id;
 
     @NotNull
     @Size(max = 255)
-    @Column(name = \"name\", nullable = false, length = 255)
+    @Column(name = "name", nullable = false, length = 255)
     private String name;
 
-    @Column(name = \"description\")
+    @Column(name = "description")
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = \"parent_category_id\")
+    @JoinColumn(name = "parent_category_id")
     private InfrastructureCategoryEntity parentCategory;
 
-    @OneToMany(mappedBy = \"parentCategory\", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "parentCategory", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InfrastructureCategoryEntity> subcategories;
 
-    @Type(type = \"list-array\")
-    @Column(name = \"tags\", columnDefinition = \"text[]\")
+    @Type(type = "list-array")
+    @Column(name = "tags", columnDefinition = "text[]")
     private List<String> tags;
 
-    @Type(type = \"jsonb\")
-    @Column(name = \"metadata\", columnDefinition = \"jsonb\")
+    @Type(type = "jsonb")
+    @Column(name = "metadata", columnDefinition = "jsonb")
     private Map<String, Object> metadata;
 
     @CreationTimestamp
-    @Column(name = \"created_at\", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Timestamp createdAt;
 
     @UpdateTimestamp
-    @Column(name = \"updated_at\", nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private Timestamp updatedAt;
 }
